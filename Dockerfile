@@ -36,11 +36,11 @@ WORKDIR /app
 
 COPY --from=builder --chown=appuser:appgroup /app/ytdlp-api /app/ytdlp-api
 
-RUN mkdir -p /app/cookies /app/logs && \
-	chown -R appuser:appgroup /app/cookies /app/logs && \
-	chmod 755 /app/cookies /app/logs
+RUN mkdir -p /app/cookies /app/cookies-cache /app/logs && \
+	chown -R appuser:appgroup /app/cookies /app/cookies-cache /app/logs && \
+	chmod 755 /app/cookies /app/cookies-cache /app/logs
 
-VOLUME ["/app/cookies", "/app/logs"]
+VOLUME ["/app/cookies", "/app/cookies-cache", "/app/logs"]
 
 USER appuser
 

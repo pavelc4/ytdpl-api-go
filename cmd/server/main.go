@@ -53,6 +53,14 @@ func main() {
 
 	log.Printf(" Server starting on port %s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
+
+	app.All("*", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"path":   c.Path(),
+			"method": c.Method(),
+		})
+	})
+
 }
 
 func customErrorHandler(c *fiber.Ctx, err error) error {

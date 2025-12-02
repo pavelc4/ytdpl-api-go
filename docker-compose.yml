@@ -13,7 +13,7 @@ services:
       - API_VERSION=${API_VERSION:-v1}
       - TZ=Asia/Jakarta
     volumes:
-      - ./cookies:/app/cookies:ro
+      - ./cookies-cache:/app/cookies-cache
       - ./logs:/app/logs
     networks:
       - default

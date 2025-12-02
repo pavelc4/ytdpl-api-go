@@ -20,7 +20,7 @@ func NewYTDLPService(cookiePath string) *YTDLPService {
 }
 
 func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
-	args := []string{"-g", "--no-warnings"}
+	args := []string{"-g", "--no-warnings", "--no-cache-dir"}
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
@@ -29,12 +29,16 @@ func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
 	args = append(args, url)
 
 	cmd := exec.Command("yt-dlp", args...)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract URLs: %w", err)
+		return nil, fmt.Errorf("failed to extract URLs: %w (output: %s)", err, string(output))
 	}
 
 	urls := strings.Split(strings.TrimSpace(string(output)), "\n")
+
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("no URLs found")
+	}
 
 	result := &models.VideoURL{
 		VideoURL: urls[0],
@@ -48,7 +52,7 @@ func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
 }
 
 func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
-	args := []string{"-J", "--no-warnings"}
+	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
@@ -57,9 +61,9 @@ func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
 	args = append(args, url)
 
 	cmd := exec.Command("yt-dlp", args...)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract info: %w", err)
+		return nil, fmt.Errorf("failed to extract info: %w (output: %s)", err, string(output))
 	}
 
 	var data map[string]interface{}
@@ -82,7 +86,7 @@ func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
 }
 
 func (s *YTDLPService) GetFormats(url string) (*models.FormatsResponse, error) {
-	args := []string{"-J", "--no-warnings"}
+	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
@@ -91,9 +95,9 @@ func (s *YTDLPService) GetFormats(url string) (*models.FormatsResponse, error) {
 	args = append(args, url)
 
 	cmd := exec.Command("yt-dlp", args...)
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract formats: %w", err)
+		return nil, fmt.Errorf("failed to extract formats: %w (output: %s)", err, string(output))
 	}
 
 	var data map[string]interface{}
