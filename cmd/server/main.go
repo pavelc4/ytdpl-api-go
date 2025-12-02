@@ -51,7 +51,7 @@ func main() {
 	api.Get("/info", videoHandler.GetVideoInfo)
 	api.Get("/formats", videoHandler.GetFormats)
 
-	log.Printf("🚀 Server starting on port %s", cfg.Port)
+	log.Printf(" Server starting on port %s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
 }
 
