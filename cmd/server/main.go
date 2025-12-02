@@ -9,6 +9,7 @@ import (
 
 	"github.com/pavelc4/ytdpl-api-go/config"
 	handlers "github.com/pavelc4/ytdpl-api-go/internal/handler"
+	"github.com/pavelc4/ytdpl-api-go/internal/routes"
 	"github.com/pavelc4/ytdpl-api-go/internal/services"
 )
 
@@ -43,13 +44,7 @@ func main() {
 		AllowMethods: "GET,POST,OPTIONS",
 	}))
 
-	app.Get("/", healthHandler.Home)
-	app.Get("/health", healthHandler.Check)
-
-	api := app.Group("/api/" + cfg.APIVersion)
-	api.Get("/dl", videoHandler.GetDownloadURLs)
-	api.Get("/info", videoHandler.GetVideoInfo)
-	api.Get("/formats", videoHandler.GetFormats)
+	routes.SetupRoutes(app, cfg, videoHandler, healthHandler)
 
 	log.Printf(" Server starting on port %s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
