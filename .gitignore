@@ -1,0 +1,6 @@
+#idea Texteditor
+.idea
+.vscode
+
+#env
+.env
