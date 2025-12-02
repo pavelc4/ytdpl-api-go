@@ -18,18 +18,22 @@ func NewVideoHandler(ytdlpService *services.YTDLPService) *VideoHandler {
 	}
 }
 
+func isValidURL(url string) bool {
+	return len(url) > 0 && (url[:4] == "http" || url[:3] == "www")
+}
+
 func (h *VideoHandler) GetDownloadURLs(c *fiber.Ctx) error {
 	url := c.Query("url")
-	if url == "" {
+	if !isValidURL(url) {
 		response := models.ErrorResponse(
 			"INVALID_INPUT",
-			"URL parameter is required",
+			"Invalid URL format",
 			"Please provide a valid video URL",
 		)
 		return c.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
-	data, err := h.ytdlpService.GetDownloadURLs(url)
+	data, err := h.ytdlpService.GetDownloadURLs(c.Context(), url)
 	if err != nil {
 		response := models.ErrorResponse(
 			"EXTRACTION_FAILED",
@@ -50,16 +54,16 @@ func (h *VideoHandler) GetDownloadURLs(c *fiber.Ctx) error {
 
 func (h *VideoHandler) GetVideoInfo(c *fiber.Ctx) error {
 	url := c.Query("url")
-	if url == "" {
+	if !isValidURL(url) {
 		response := models.ErrorResponse(
 			"INVALID_INPUT",
-			"URL parameter is required",
+			"Invalid URL format",
 			"Please provide a valid video URL",
 		)
 		return c.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
-	data, err := h.ytdlpService.GetVideoInfo(url)
+	data, err := h.ytdlpService.GetVideoInfo(c.Context(), url)
 	if err != nil {
 		response := models.ErrorResponse(
 			"EXTRACTION_FAILED",
@@ -80,16 +84,16 @@ func (h *VideoHandler) GetVideoInfo(c *fiber.Ctx) error {
 
 func (h *VideoHandler) GetFormats(c *fiber.Ctx) error {
 	url := c.Query("url")
-	if url == "" {
+	if !isValidURL(url) {
 		response := models.ErrorResponse(
 			"INVALID_INPUT",
-			"URL parameter is required",
+			"Invalid URL format",
 			"Please provide a valid video URL",
 		)
 		return c.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
-	data, err := h.ytdlpService.GetFormats(url)
+	data, err := h.ytdlpService.GetFormats(c.Context(), url)
 	if err != nil {
 		response := models.ErrorResponse(
 			"EXTRACTION_FAILED",

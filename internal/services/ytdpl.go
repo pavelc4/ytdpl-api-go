@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -26,15 +27,18 @@ func NewYTDLPService(cookiePath string) *YTDLPService {
 	}
 }
 
-func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
-	// Check cache
+func (s *YTDLPService) GetDownloadURLs(ctx context.Context, url string) (*models.VideoURL, error) {
 	cacheKey := "dl_" + url
 	if cached, found := s.cache.Get(cacheKey); found {
 		return cached.(*models.VideoURL), nil
 	}
 
-	s.semaphore <- struct{}{}
-	defer func() { <-s.semaphore }()
+	select {
+	case s.semaphore <- struct{}{}:
+		defer func() { <-s.semaphore }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	args := []string{"-g", "--no-warnings", "--no-cache-dir", "--no-playlist"}
 
@@ -44,7 +48,7 @@ func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
 
 	args = append(args, url)
 
-	cmd := exec.Command("yt-dlp", args...)
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract URLs: %w (output: %s)", err, string(output))
@@ -69,15 +73,18 @@ func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
 	return result, nil
 }
 
-func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
-	// Check cache
+func (s *YTDLPService) GetVideoInfo(ctx context.Context, url string) (*models.VideoInfo, error) {
 	cacheKey := "info_" + url
 	if cached, found := s.cache.Get(cacheKey); found {
 		return cached.(*models.VideoInfo), nil
 	}
 
-	s.semaphore <- struct{}{}
-	defer func() { <-s.semaphore }()
+	select {
+	case s.semaphore <- struct{}{}:
+		defer func() { <-s.semaphore }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
 
@@ -87,26 +94,26 @@ func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
 
 	args = append(args, url)
 
-	cmd := exec.Command("yt-dlp", args...)
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract info: %w (output: %s)", err, string(output))
 	}
 
-	var data map[string]interface{}
+	var data models.YTDLPOutput
 	if err := json.Unmarshal(output, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
 	info := &models.VideoInfo{
-		ID:          getString(data, "id"),
-		Title:       getString(data, "title"),
-		Duration:    getInt(data, "duration"),
-		Thumbnail:   getString(data, "thumbnail"),
-		Description: getString(data, "description"),
-		Uploader:    getString(data, "uploader"),
-		ViewCount:   getInt(data, "view_count"),
-		UploadDate:  getString(data, "upload_date"),
+		ID:          data.ID,
+		Title:       data.Title,
+		Duration:    int(data.Duration),
+		Thumbnail:   data.Thumbnail,
+		Description: data.Description,
+		Uploader:    data.Uploader,
+		ViewCount:   data.ViewCount,
+		UploadDate:  data.UploadDate,
 	}
 
 	s.cache.Set(cacheKey, info, cache.DefaultExpiration)
@@ -114,15 +121,18 @@ func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
 	return info, nil
 }
 
-func (s *YTDLPService) GetFormats(url string) (*models.FormatsResponse, error) {
-	// Check cache
+func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.FormatsResponse, error) {
 	cacheKey := "fmt_" + url
 	if cached, found := s.cache.Get(cacheKey); found {
 		return cached.(*models.FormatsResponse), nil
 	}
 
-	s.semaphore <- struct{}{}
-	defer func() { <-s.semaphore }()
+	select {
+	case s.semaphore <- struct{}{}:
+		defer func() { <-s.semaphore }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
 
@@ -132,62 +142,23 @@ func (s *YTDLPService) GetFormats(url string) (*models.FormatsResponse, error) {
 
 	args = append(args, url)
 
-	cmd := exec.Command("yt-dlp", args...)
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract formats: %w (output: %s)", err, string(output))
 	}
 
-	var data map[string]interface{}
+	var data models.YTDLPOutput
 	if err := json.Unmarshal(output, &data); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
 	response := &models.FormatsResponse{
-		VideoID: getString(data, "id"),
-		Formats: []models.VideoFormat{},
-	}
-
-	if fmts, ok := data["formats"].([]interface{}); ok {
-		for _, f := range fmts {
-			if fm, ok := f.(map[string]interface{}); ok {
-				format := models.VideoFormat{
-					FormatID:   getString(fm, "format_id"),
-					Ext:        getString(fm, "ext"),
-					Resolution: getString(fm, "resolution"),
-					Quality:    getString(fm, "format_note"),
-					Filesize:   getInt64(fm, "filesize"),
-					FPS:        getInt(fm, "fps"),
-					VCodec:     getString(fm, "vcodec"),
-					ACodec:     getString(fm, "acodec"),
-				}
-				response.Formats = append(response.Formats, format)
-			}
-		}
+		VideoID: data.ID,
+		Formats: data.Formats,
 	}
 
 	s.cache.Set(cacheKey, response, cache.DefaultExpiration)
 
 	return response, nil
-}
-
-func getString(data map[string]interface{}, key string) string {
-	if val, ok := data[key].(string); ok {
-		return val
-	}
-	return ""
-}
-
-func getInt(data map[string]interface{}, key string) int {
-	if val, ok := data[key].(float64); ok {
-		return int(val)
-	}
-	return 0
-}
-
-func getInt64(data map[string]interface{}, key string) int64 {
-	if val, ok := data[key].(float64); ok {
-		return int64(val)
-	}
-	return 0
 }

@@ -1,5 +1,17 @@
 package models
 
+type YTDLPOutput struct {
+	ID          string        `json:"id"`
+	Title       string        `json:"title"`
+	Duration    float64       `json:"duration"`
+	Thumbnail   string        `json:"thumbnail"`
+	Description string        `json:"description"`
+	Uploader    string        `json:"uploader"`
+	ViewCount   int           `json:"view_count"`
+	UploadDate  string        `json:"upload_date"`
+	Formats     []VideoFormat `json:"formats"`
+}
+
 type VideoURL struct {
 	VideoURL string `json:"video_url"`
 	AudioURL string `json:"audio_url,omitempty"`
