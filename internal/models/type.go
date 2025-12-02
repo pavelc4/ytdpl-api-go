@@ -29,14 +29,14 @@ type VideoInfo struct {
 }
 
 type VideoFormat struct {
-	FormatID   string `json:"format_id"`
-	Ext        string `json:"ext"`
-	Resolution string `json:"resolution"`
-	Quality    string `json:"quality"`
-	Filesize   int64  `json:"filesize"`
-	FPS        int    `json:"fps,omitempty"`
-	VCodec     string `json:"vcodec,omitempty"`
-	ACodec     string `json:"acodec,omitempty"`
+	FormatID   string  `json:"format_id"`
+	Ext        string  `json:"ext"`
+	Resolution string  `json:"resolution"`
+	Quality    string  `json:"quality"`
+	Filesize   int64   `json:"filesize"`
+	FPS        float64 `json:"fps,omitempty"`
+	VCodec     string  `json:"vcodec,omitempty"`
+	ACodec     string  `json:"acodec,omitempty"`
 }
 
 type FormatsResponse struct {
