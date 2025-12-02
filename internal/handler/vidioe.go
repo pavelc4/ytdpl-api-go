@@ -43,7 +43,7 @@ func (h *VideoHandler) GetDownloadURLs(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	response := models.SuccessResponse(data, "URLs extracted successfully")
+	response := models.SuccessResponse(data)
 	response.Meta = &models.Meta{
 		Timestamp: time.Now().Unix(),
 		Version:   "1.0",
@@ -73,7 +73,7 @@ func (h *VideoHandler) GetVideoInfo(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	response := models.SuccessResponse(data, "Video info extracted successfully")
+	response := models.SuccessResponse(data)
 	response.Meta = &models.Meta{
 		Timestamp: time.Now().Unix(),
 		Version:   "1.0",
@@ -103,7 +103,7 @@ func (h *VideoHandler) GetFormats(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	response := models.SuccessResponse(data, "Formats extracted successfully")
+	response := models.SuccessResponse(data)
 	response.Meta = &models.Meta{
 		Timestamp: time.Now().Unix(),
 		Version:   "1.0",

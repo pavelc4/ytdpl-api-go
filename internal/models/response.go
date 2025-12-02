@@ -1,11 +1,9 @@
 package models
 
 type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   *ErrorInfo  `json:"error,omitempty"`
-	Meta    *Meta       `json:"meta,omitempty"`
+	Data  interface{} `json:"data,omitempty"`
+	Error *ErrorInfo  `json:"error,omitempty"`
+	Meta  *Meta       `json:"meta,omitempty"`
 }
 
 type ErrorInfo struct {
@@ -20,17 +18,14 @@ type Meta struct {
 	Version   string `json:"version"`
 }
 
-func SuccessResponse(data interface{}, message string) Response {
+func SuccessResponse(data interface{}) Response {
 	return Response{
-		Success: true,
-		Message: message,
-		Data:    data,
+		Data: data,
 	}
 }
 
 func ErrorResponse(code, message, details string) Response {
 	return Response{
-		Success: false,
 		Error: &ErrorInfo{
 			Code:    code,
 			Message: message,

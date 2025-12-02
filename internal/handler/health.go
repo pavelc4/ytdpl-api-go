@@ -24,7 +24,7 @@ func (h *HealthHandler) Check(c *fiber.Ctx) error {
 		"timestamp":       time.Now().Unix(),
 	}
 
-	response := models.SuccessResponse(data, "Service is healthy")
+	response := models.SuccessResponse(data)
 	return c.JSON(response)
 }
 
@@ -40,6 +40,6 @@ func (h *HealthHandler) Home(c *fiber.Ctx) error {
 		},
 	}
 
-	response := models.SuccessResponse(data, "Welcome to yt-dlp API")
+	response := models.SuccessResponse(data)
 	return c.JSON(response)
 }
