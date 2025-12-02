@@ -6,21 +6,37 @@ import (
 	"os/exec"
 	"strings"
 
+	"time"
+
+	"github.com/patrickmn/go-cache"
 	models "github.com/pavelc4/ytdpl-api-go/internal/models"
 )
 
 type YTDLPService struct {
 	cookiePath string
+	cache      *cache.Cache
+	semaphore  chan struct{}
 }
 
 func NewYTDLPService(cookiePath string) *YTDLPService {
 	return &YTDLPService{
 		cookiePath: cookiePath,
+		cache:      cache.New(15*time.Minute, 30*time.Minute),
+		semaphore:  make(chan struct{}, 10), // Limit to 10 concurrent processes
 	}
 }
 
 func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
-	args := []string{"-g", "--no-warnings", "--no-cache-dir"}
+	// Check cache
+	cacheKey := "dl_" + url
+	if cached, found := s.cache.Get(cacheKey); found {
+		return cached.(*models.VideoURL), nil
+	}
+
+	s.semaphore <- struct{}{}
+	defer func() { <-s.semaphore }()
+
+	args := []string{"-g", "--no-warnings", "--no-cache-dir", "--no-playlist"}
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
@@ -48,10 +64,21 @@ func (s *YTDLPService) GetDownloadURLs(url string) (*models.VideoURL, error) {
 		result.AudioURL = urls[1]
 	}
 
+	s.cache.Set(cacheKey, result, cache.DefaultExpiration)
+
 	return result, nil
 }
 
 func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
+	// Check cache
+	cacheKey := "info_" + url
+	if cached, found := s.cache.Get(cacheKey); found {
+		return cached.(*models.VideoInfo), nil
+	}
+
+	s.semaphore <- struct{}{}
+	defer func() { <-s.semaphore }()
+
 	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
 
 	if s.cookiePath != "" {
@@ -82,10 +109,21 @@ func (s *YTDLPService) GetVideoInfo(url string) (*models.VideoInfo, error) {
 		UploadDate:  getString(data, "upload_date"),
 	}
 
+	s.cache.Set(cacheKey, info, cache.DefaultExpiration)
+
 	return info, nil
 }
 
 func (s *YTDLPService) GetFormats(url string) (*models.FormatsResponse, error) {
+	// Check cache
+	cacheKey := "fmt_" + url
+	if cached, found := s.cache.Get(cacheKey); found {
+		return cached.(*models.FormatsResponse), nil
+	}
+
+	s.semaphore <- struct{}{}
+	defer func() { <-s.semaphore }()
+
 	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
 
 	if s.cookiePath != "" {
@@ -127,6 +165,8 @@ func (s *YTDLPService) GetFormats(url string) (*models.FormatsResponse, error) {
 			}
 		}
 	}
+
+	s.cache.Set(cacheKey, response, cache.DefaultExpiration)
 
 	return response, nil
 }
