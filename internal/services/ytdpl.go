@@ -168,7 +168,7 @@ func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.Form
 	return response, nil
 }
 
-func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, quality string) error {
+func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, quality, formatType string) error {
 	select {
 	case s.semaphore <- struct{}{}:
 		defer func() { <-s.semaphore }()
@@ -176,20 +176,35 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 		return ctx.Err()
 	}
 
-	format := "bestvideo+bestaudio/best"
-	if quality == "720p" {
-		format = "bestvideo[height<=720]+bestaudio/best[height<=720]"
-	} else if quality == "1080p" {
-		format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
-	}
+	var args []string
 
-	args := []string{
-		"-f", format,
-		"--merge-output-format", "mp4",
-		"--no-playlist",
-		"--no-warnings",
-		"--no-cache-dir",
-		"-o", outputPath,
+	if formatType == "audio" {
+		args = []string{
+			"-f", "bestaudio/best",
+			"--extract-audio",
+			"--audio-format", "mp3",
+			"--audio-quality", "0",
+			"--no-playlist",
+			"--no-warnings",
+			"--no-cache-dir",
+			"-o", outputPath,
+		}
+	} else {
+		format := "bestvideo+bestaudio/best"
+		if quality == "720p" {
+			format = "bestvideo[height<=720]+bestaudio/best[height<=720]"
+		} else if quality == "1080p" {
+			format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+		}
+
+		args = []string{
+			"-f", format,
+			"--merge-output-format", "mp4",
+			"--no-playlist",
+			"--no-warnings",
+			"--no-cache-dir",
+			"-o", outputPath,
+		}
 	}
 
 	if s.cookiePath != "" {
@@ -201,7 +216,7 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to download video: %w (output: %s)", err, string(output))
+		return fmt.Errorf("failed to download: %w (output: %s)", err, string(output))
 	}
 
 	return nil

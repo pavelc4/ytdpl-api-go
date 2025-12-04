@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
 	"github.com/pavelc4/ytdpl-api-go/internal/models"
 	"github.com/pavelc4/ytdpl-api-go/internal/services"
@@ -73,7 +74,8 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 	}
 
 	quality := c.Query("quality", "best")
-	cacheKey := fmt.Sprintf("upload_%s_%s", url, quality)
+	formatType := c.Query("type", "video")
+	cacheKey := fmt.Sprintf("upload_%s_%s_%s", url, quality, formatType)
 	if cached, found := h.cache.Get(cacheKey); found {
 		return c.JSON(cached)
 	}
@@ -88,7 +90,11 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	fileName := fmt.Sprintf("%d.mp4", time.Now().UnixNano())
+	ext := "mp4"
+	if formatType == "audio" {
+		ext = "mp3"
+	}
+	fileName := fmt.Sprintf("%d.%s", time.Now().UnixNano(), ext)
 	tempPath := filepath.Join(tmpDir, fileName)
 
 	defer os.Remove(tempPath)
@@ -96,7 +102,7 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 15*time.Minute)
 	defer cancel()
 
-	if err := h.ytdlpService.DownloadToFile(ctx, url, tempPath, quality); err != nil {
+	if err := h.ytdlpService.DownloadToFile(ctx, url, tempPath, quality, formatType); err != nil {
 		response := models.ErrorResponse(
 			"DOWNLOAD_FAILED",
 			"Failed to download video and Merge ",
@@ -105,7 +111,11 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(response)
 	}
 
-	objectkey := fmt.Sprintf("vidioe/%s", fileName)
+	folder := "vidioe"
+	if formatType == "audio" {
+		folder = "audio"
+	}
+	objectkey := fmt.Sprintf("%s/%s.%s", folder, uuid.New().String(), ext)
 	publicURL, err := h.r2Service.UploadFile(ctx, tempPath, objectkey)
 	if err != nil {
 		response := models.ErrorResponse(

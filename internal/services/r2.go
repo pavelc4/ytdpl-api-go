@@ -76,30 +76,35 @@ func (r *R2Service) DeleteFile(ctx context.Context, objectKey string) error {
 func (r *R2Service) CleanupOldFiles(ctx context.Context, retentionDays int) error {
 	log.Printf(" Starting cleanup of files older than %d days...", retentionDays)
 
-	paginator := s3.NewListObjectsV2Paginator(r.client, &s3.ListObjectsV2Input{
-		Bucket: aws.String(r.bucket),
-		Prefix: aws.String("vidioe/"),
-	})
-
-	cutoff := time.Now().AddDate(0, 0, -retentionDays)
+	prefixes := []string{"vidioe/", "audio/"}
 	deletedCount := 0
 	errorsCount := 0
+	cutoff := time.Now().AddDate(0, 0, -retentionDays)
 
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to list objects: %w", err)
-		}
+	for _, prefix := range prefixes {
+		paginator := s3.NewListObjectsV2Paginator(r.client, &s3.ListObjectsV2Input{
+			Bucket: aws.String(r.bucket),
+			Prefix: aws.String(prefix),
+		})
 
-		for _, obj := range page.Contents {
-			if obj.LastModified.Before(cutoff) {
-				err := r.DeleteFile(ctx, *obj.Key)
-				if err != nil {
-					log.Printf(" Failed to delete %s: %v", *obj.Key, err)
-					errorsCount++
-				} else {
-					log.Printf(" Deleted old file: %s (Last modified: %s)", *obj.Key, obj.LastModified.Format(time.RFC3339))
-					deletedCount++
+		for paginator.HasMorePages() {
+			page, err := paginator.NextPage(ctx)
+			if err != nil {
+				log.Printf("Failed to list objects for prefix %s: %v", prefix, err)
+				errorsCount++
+				continue
+			}
+
+			for _, obj := range page.Contents {
+				if obj.LastModified.Before(cutoff) {
+					err := r.DeleteFile(ctx, *obj.Key)
+					if err != nil {
+						log.Printf(" Failed to delete %s: %v", *obj.Key, err)
+						errorsCount++
+					} else {
+						log.Printf(" Deleted old file: %s (Last modified: %s)", *obj.Key, obj.LastModified.Format(time.RFC3339))
+						deletedCount++
+					}
 				}
 			}
 		}
