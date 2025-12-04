@@ -29,8 +29,6 @@ func main() {
 		log.Printf("  No cookie configured (age-restricted videos may fail)")
 	}
 
-	ytdlpService := services.NewYTDLPService(cfg.CookiePath)
-
 	r2Service, err := services.NewR2Service(cfg.R2Config)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize R2 service: %v", err)
@@ -62,6 +60,8 @@ func main() {
 			}
 		}()
 	}
+
+	ytdlpService := services.NewYTDLPService(cfg.CookiePath)
 
 	videoHandler := handlers.NewVideoHandler(ytdlpService, r2Service)
 	healthHandler := handlers.NewHealthHandler()
