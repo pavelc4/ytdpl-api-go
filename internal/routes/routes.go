@@ -35,4 +35,6 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, videoHandler *handlers.Vide
 	api.Get("/dl", videoHandler.GetDownloadURLs)
 	api.Get("/info", videoHandler.GetVideoInfo)
 	api.Get("/formats", videoHandler.GetFormats)
+
+	api.Get("/merge", videoHandler.MergeAndUpload)
 }

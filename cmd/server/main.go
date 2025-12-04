@@ -29,12 +29,18 @@ func main() {
 
 	ytdlpService := services.NewYTDLPService(cfg.CookiePath)
 
-	videoHandler := handlers.NewVideoHandler(ytdlpService)
+	r2Service, err := services.NewR2Service(cfg.R2Config)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize R2 service: %v", err)
+	}
+
+	videoHandler := handlers.NewVideoHandler(ytdlpService, r2Service)
 	healthHandler := handlers.NewHealthHandler()
 
 	app := fiber.New(fiber.Config{
 		AppName:      "yt-dlp API v1.0",
 		ErrorHandler: customErrorHandler,
+		BodyLimit:    10 * 1024 * 1024,
 	})
 
 	app.Use(logger.New(logger.Config{

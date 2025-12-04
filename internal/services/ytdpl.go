@@ -134,7 +134,12 @@ func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.Form
 		return nil, ctx.Err()
 	}
 
-	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
+	args := []string{
+		"-J",
+		"--no-playlist",
+		"--no-warnings",
+		"--no-cache-dir",
+	}
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
@@ -161,4 +166,36 @@ func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.Form
 	s.cache.Set(cacheKey, response, cache.DefaultExpiration)
 
 	return response, nil
+}
+
+func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath string) error {
+	select {
+	case s.semaphore <- struct{}{}:
+		defer func() { <-s.semaphore }()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	args := []string{
+		"-f", "bestvideo[height<=720]+bestaudio/best[height<=720]",
+		"--merge-output-format", "mp4",
+		"--no-playlist",
+		"--no-warnings",
+		"--no-cache-dir",
+		"-o", outputPath,
+	}
+
+	if s.cookiePath != "" {
+		args = append(args, "--cookies", s.cookiePath)
+	}
+
+	args = append(args, url)
+
+	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to download video: %w (output: %s)", err, string(output))
+	}
+
+	return nil
 }
