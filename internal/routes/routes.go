@@ -36,5 +36,20 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, videoHandler *handlers.Vide
 	api.Get("/info", videoHandler.GetVideoInfo)
 	api.Get("/formats", videoHandler.GetFormats)
 
-	api.Get("/merge", videoHandler.MergeAndUpload)
+	api.Get("/merge", limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"success": false,
+				"error": fiber.Map{
+					"code":    fiber.StatusTooManyRequests,
+					"message": "Upload limit reached, please try again later.",
+				},
+			})
+		},
+	}), videoHandler.MergeAndUpload)
 }

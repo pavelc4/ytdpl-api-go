@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/patrickmn/go-cache"
 	"github.com/pavelc4/ytdpl-api-go/internal/models"
 	"github.com/pavelc4/ytdpl-api-go/internal/services"
 )
@@ -15,12 +16,14 @@ import (
 type VideoHandler struct {
 	ytdlpService *services.YTDLPService
 	r2Service    *services.R2Service
+	cache        *cache.Cache
 }
 
 func NewVideoHandler(ytdlpService *services.YTDLPService, r2Service *services.R2Service) *VideoHandler {
 	return &VideoHandler{
 		ytdlpService: ytdlpService,
 		r2Service:    r2Service,
+		cache:        cache.New(1*time.Hour, 2*time.Hour),
 	}
 }
 
@@ -67,6 +70,11 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 			"Please provide a valid video URL",
 		)
 		return c.Status(fiber.StatusBadRequest).JSON(response)
+	}
+
+	cacheKey := "upload_" + url
+	if cached, found := h.cache.Get(cacheKey); found {
+		return c.JSON(cached)
 	}
 
 	tmpDir := filepath.Join(os.TempDir(), "ytdpl")
@@ -118,6 +126,8 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 		Timestamp: time.Now().Unix(),
 		Version:   "1.0",
 	}
+
+	h.cache.Set(cacheKey, response, cache.DefaultExpiration)
 
 	return c.JSON(response)
 }
