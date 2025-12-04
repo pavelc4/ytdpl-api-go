@@ -169,7 +169,7 @@ func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.Form
 	return response, nil
 }
 
-func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, quality, formatType string) error {
+func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, quality, formatType, containerFormat string) error {
 	select {
 	case s.semaphore <- struct{}{}:
 		defer func() { <-s.semaphore }()
@@ -200,7 +200,7 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 
 		args = []string{
 			"-f", format,
-			"--merge-output-format", "mp4",
+			"--merge-output-format", containerFormat,
 			"--no-playlist",
 			"--no-warnings",
 			"--no-cache-dir",
