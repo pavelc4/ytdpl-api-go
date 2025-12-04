@@ -35,6 +35,17 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: Failed to initialize R2 service: %v", err)
 	} else {
+		if cfg.R2CookieKey != "" {
+			log.Printf(" Downloading cookie from R2: %s", cfg.R2CookieKey)
+			tmpCookiePath := "/tmp/youtube_cookie.txt"
+			if err := r2Service.DownloadFile(context.Background(), cfg.R2CookieKey, tmpCookiePath); err != nil {
+				log.Printf(" Failed to download cookie from R2: %v", err)
+			} else {
+				cfg.CookiePath = tmpCookiePath
+				log.Printf(" Cookie downloaded to %s", tmpCookiePath)
+			}
+		}
+
 		go func() {
 			log.Println(" Starting background cleanup task (every 24h)")
 			ticker := time.NewTicker(24 * time.Hour)

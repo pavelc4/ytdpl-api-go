@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -105,5 +106,29 @@ func (r *R2Service) CleanupOldFiles(ctx context.Context, retentionDays int) erro
 	}
 
 	log.Printf(" Cleanup completed. Deleted: %d, Errors: %d", deletedCount, errorsCount)
+	return nil
+}
+
+func (r *R2Service) DownloadFile(ctx context.Context, objectKey, destPath string) error {
+	result, err := r.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(r.bucket),
+		Key:    aws.String(objectKey),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get object from R2: %w", err)
+	}
+	defer result.Body.Close()
+
+	outFile, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create local file: %w", err)
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, result.Body)
+	if err != nil {
+		return fmt.Errorf("failed to write to local file: %w", err)
+	}
+
 	return nil
 }

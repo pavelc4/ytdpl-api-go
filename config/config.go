@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Port       string
-	CookiePath string
-	APIVersion string
-	R2Config   R2Config
+	Port        string
+	CookiePath  string
+	APIVersion  string
+	R2CookieKey string
+	R2Config    R2Config
 }
 
 type R2Config struct {
@@ -29,9 +30,10 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:       getEnv("PORT", "5000"),
-		CookiePath: getEnv("COOKIE_PATH", ""),
-		APIVersion: getEnv("API_VERSION", "v1"),
+		Port:        getEnv("PORT", "5000"),
+		CookiePath:  getEnv("COOKIE_PATH", ""),
+		APIVersion:  getEnv("API_VERSION", "v1"),
+		R2CookieKey: getEnv("R2_COOKIE_KEY", ""),
 		R2Config: R2Config{
 			AccountID:       getEnv("R2_ACCOUNT_ID", ""),
 			AccessKeyID:     getEnv("R2_ACCESS_KEY_ID", ""),
