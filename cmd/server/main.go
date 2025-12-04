@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -32,6 +34,22 @@ func main() {
 	r2Service, err := services.NewR2Service(cfg.R2Config)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize R2 service: %v", err)
+	} else {
+		go func() {
+			log.Println(" Starting background cleanup task (every 24h)")
+			ticker := time.NewTicker(24 * time.Hour)
+			defer ticker.Stop()
+
+			if err := r2Service.CleanupOldFiles(context.Background(), 7); err != nil {
+				log.Printf(" Initial cleanup failed: %v", err)
+			}
+
+			for range ticker.C {
+				if err := r2Service.CleanupOldFiles(context.Background(), 7); err != nil {
+					log.Printf(" Scheduled cleanup failed: %v", err)
+				}
+			}
+		}()
 	}
 
 	videoHandler := handlers.NewVideoHandler(ytdlpService, r2Service)

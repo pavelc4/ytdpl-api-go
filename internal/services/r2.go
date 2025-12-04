@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -68,4 +70,40 @@ func (r *R2Service) DeleteFile(ctx context.Context, objectKey string) error {
 		Key:    aws.String(objectKey),
 	})
 	return err
+}
+
+func (r *R2Service) CleanupOldFiles(ctx context.Context, retentionDays int) error {
+	log.Printf(" Starting cleanup of files older than %d days...", retentionDays)
+
+	paginator := s3.NewListObjectsV2Paginator(r.client, &s3.ListObjectsV2Input{
+		Bucket: aws.String(r.bucket),
+		Prefix: aws.String("vidioe/"),
+	})
+
+	cutoff := time.Now().AddDate(0, 0, -retentionDays)
+	deletedCount := 0
+	errorsCount := 0
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to list objects: %w", err)
+		}
+
+		for _, obj := range page.Contents {
+			if obj.LastModified.Before(cutoff) {
+				err := r.DeleteFile(ctx, *obj.Key)
+				if err != nil {
+					log.Printf(" Failed to delete %s: %v", *obj.Key, err)
+					errorsCount++
+				} else {
+					log.Printf(" Deleted old file: %s (Last modified: %s)", *obj.Key, obj.LastModified.Format(time.RFC3339))
+					deletedCount++
+				}
+			}
+		}
+	}
+
+	log.Printf(" Cleanup completed. Deleted: %d, Errors: %d", deletedCount, errorsCount)
+	return nil
 }
