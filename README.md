@@ -111,9 +111,10 @@ Downloads the video/audio, processes it, and uploads it to Cloudflare R2.
   - `url` (required)
   - `quality` (optional): `best` (default), `1080p`, `720p`.
   - `type` (optional): `video` (default), `audio`.
+  - `format` (optional): `mp4` (default), `webm`, `mkv`, `avi`, etc.
 - **Examples**:
 
-  **Best Quality Video (Default):**
+  **Best Quality Video (Default MP4):**
   ```bash
   curl "http://localhost:3000/api/v1/merge?url=https://youtu.be/..."
   ```
@@ -126,6 +127,11 @@ Downloads the video/audio, processes it, and uploads it to Cloudflare R2.
   **Specific Resolution (1080p):**
   ```bash
   curl "http://localhost:3000/api/v1/merge?url=https://youtu.be/...&quality=1080p"
+  ```
+
+  **Custom Format (WebM):**
+  ```bash
+  curl "http://localhost:3000/api/v1/merge?url=https://youtu.be/...&format=webm"
   ```
 
 ### 5. Health Check
