@@ -72,7 +72,8 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
-	cacheKey := "upload_" + url
+	quality := c.Query("quality", "best")
+	cacheKey := fmt.Sprintf("upload_%s_%s", url, quality)
 	if cached, found := h.cache.Get(cacheKey); found {
 		return c.JSON(cached)
 	}
@@ -95,7 +96,7 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 15*time.Minute)
 	defer cancel()
 
-	if err := h.ytdlpService.DownloadToFile(ctx, url, tempPath); err != nil {
+	if err := h.ytdlpService.DownloadToFile(ctx, url, tempPath, quality); err != nil {
 		response := models.ErrorResponse(
 			"DOWNLOAD_FAILED",
 			"Failed to download video and Merge ",

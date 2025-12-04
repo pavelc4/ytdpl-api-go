@@ -168,7 +168,7 @@ func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.Form
 	return response, nil
 }
 
-func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath string) error {
+func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, quality string) error {
 	select {
 	case s.semaphore <- struct{}{}:
 		defer func() { <-s.semaphore }()
@@ -176,8 +176,15 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath strin
 		return ctx.Err()
 	}
 
+	format := "bestvideo+bestaudio/best"
+	if quality == "720p" {
+		format = "bestvideo[height<=720]+bestaudio/best[height<=720]"
+	} else if quality == "1080p" {
+		format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+	}
+
 	args := []string{
-		"-f", "bestvideo[height<=720]+bestaudio/best[height<=720]",
+		"-f", format,
 		"--merge-output-format", "mp4",
 		"--no-playlist",
 		"--no-warnings",
