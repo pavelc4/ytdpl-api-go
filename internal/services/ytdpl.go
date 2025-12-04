@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os/exec"
 	"strings"
 
@@ -212,6 +213,8 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 	}
 
 	args = append(args, url)
+
+	log.Printf("Executing yt-dlp with args: %v", args)
 
 	cmd := exec.CommandContext(ctx, "yt-dlp", args...)
 	output, err := cmd.CombinedOutput()
