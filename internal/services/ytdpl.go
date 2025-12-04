@@ -210,6 +210,7 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
+		args = append(args, "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	}
 
 	args = append(args, url)
