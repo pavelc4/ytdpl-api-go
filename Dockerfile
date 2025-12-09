@@ -21,11 +21,13 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	ca-certificates \
-	curl \
-	ffmpeg \
-	wget && \
+	wget \
+	unzip && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.cache
+
+RUN curl -fsSL https://bun.sh/install | bash && \
+	mv /root/.bun/bin/bun /usr/local/bin/bun
 
 RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux \
 	-o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp

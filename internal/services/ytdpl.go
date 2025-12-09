@@ -43,6 +43,10 @@ func (s *YTDLPService) GetDownloadURLs(ctx context.Context, url string) (*models
 
 	args := []string{"-g", "--no-warnings", "--no-cache-dir", "--no-playlist"}
 
+	if path, err := exec.LookPath("bun"); err == nil && path != "" {
+		args = append(args, "--js-runtimes", "bun")
+	}
+
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
 	}
@@ -88,6 +92,10 @@ func (s *YTDLPService) GetVideoInfo(ctx context.Context, url string) (*models.Vi
 	}
 
 	args := []string{"-J", "--no-warnings", "--no-cache-dir"}
+
+	if path, err := exec.LookPath("bun"); err == nil && path != "" {
+		args = append(args, "--js-runtimes", "bun")
+	}
 
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
@@ -140,6 +148,10 @@ func (s *YTDLPService) GetFormats(ctx context.Context, url string) (*models.Form
 		"--no-playlist",
 		"--no-warnings",
 		"--no-cache-dir",
+	}
+
+	if path, err := exec.LookPath("bun"); err == nil && path != "" {
+		args = append(args, "--js-runtimes", "bun")
 	}
 
 	if s.cookiePath != "" {
@@ -208,9 +220,12 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 		}
 	}
 
+	if path, err := exec.LookPath("bun"); err == nil && path != "" {
+		args = append(args, "--js-runtimes", "bun")
+	}
+
 	if s.cookiePath != "" {
 		args = append(args, "--cookies", s.cookiePath)
-		args = append(args, "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	}
 
 	args = append(args, url)
