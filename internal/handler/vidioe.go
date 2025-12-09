@@ -73,6 +73,15 @@ func (h *VideoHandler) MergeAndUpload(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response)
 	}
 
+	if h.r2Service == nil {
+		response := models.ErrorResponse(
+			"SERVICE_UNAVAILABLE",
+			"R2 Service not configured",
+			"R2 credentials are missing or invalid",
+		)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(response)
+	}
+
 	quality := c.Query("quality", "best")
 	formatType := c.Query("type", "video")
 	containerFormat := c.Query("format", "mp4")
