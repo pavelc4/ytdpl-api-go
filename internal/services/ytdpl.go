@@ -210,6 +210,10 @@ func (s *YTDLPService) DownloadToFile(ctx context.Context, url, outputPath, qual
 			format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
 		}
 
+		if _, err := exec.LookPath("ffmpeg"); err != nil {
+			return fmt.Errorf("ffmpeg not found: explicit merge requested but ffmpeg is missing in PATH")
+		}
+
 		args = []string{
 			"-f", format,
 			"--merge-output-format", containerFormat,
